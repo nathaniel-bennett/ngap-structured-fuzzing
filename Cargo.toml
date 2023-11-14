@@ -1,0 +1,22 @@
+[package]
+name = "ngap-structured-fuzzing"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "ngapstructuredfuzz"
+crate-type = ["rlib", "staticlib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[dependencies]
+asn1-codecs = { version = "0.5", path = "../hampi/codecs" }
+asn1_codecs_derive = { version = "0.5", path = "../hampi/codecs_derive" }
+entropic = { version = "0.1", path = "../entropic/entropic", features = ["derive", "bitvec"] }
+log = { version = "0.4" }
+libc = { version = "0.2" }
+bitvec = { version = "1.0" }
+
+hex = "0.4.3"
+env_logger = "0.10"
