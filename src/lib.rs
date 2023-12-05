@@ -36,7 +36,7 @@ pub unsafe extern "C" fn ngap_arbitrary_to_structured(buf_in: *mut c_char, in_le
 
     let in_iter = in_slice.iter().chain(std::iter::repeat(&0u8).take(200_000 - in_slice.len())); // Cap total entropy to 200,000 bytes for performance
 
-    let Ok(ngap_message) = ngap::NGAP_PDU::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(&in_iter) else {
+    let Ok(ngap_message) = ngap::NGAP_PDU::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(in_iter) else {
         return NGAP_ERR_ARBITRARY_FAIL
     };
 
@@ -77,7 +77,7 @@ pub unsafe extern "C" fn ngap_arbitrary_uplink_nas(buf_in: *mut c_char, in_len: 
 
     let in_iter = in_slice.iter().chain(std::iter::repeat(&0u8).take(200_000 - in_slice.len())); // Cap total entropy to 200,000 bytes for performance
 
-    let Ok(uplink_nas_transport) = ngap::UplinkNASTransport::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(&in_iter) else {
+    let Ok(uplink_nas_transport) = ngap::UplinkNASTransport::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(in_iter) else {
         return NGAP_ERR_ARBITRARY_FAIL
     };
 
@@ -124,7 +124,7 @@ pub unsafe extern "C" fn ngap_arbitrary_initial_ue(buf_in: *mut c_char, in_len: 
 
     let in_iter = in_slice.iter().chain(std::iter::repeat(&0u8).take(200_000 - in_slice.len())); // Cap total entropy to 200,000 bytes for performance
 
-    let Ok(initial_ue_message) = ngap::InitialUEMessage::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(&in_iter) else {
+    let Ok(initial_ue_message) = ngap::InitialUEMessage::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(in_iter) else {
         return NGAP_ERR_ARBITRARY_FAIL
     };
 
@@ -177,7 +177,7 @@ pub unsafe extern "C" fn ngap_arbitrary_to_structured_exclude(buf_in: *mut c_cha
 
     let in_iter = in_slice.iter().chain(std::iter::repeat(&0u8).take(200_000 - in_slice.len())); // Cap total entropy to 200,000 bytes for performance
 
-    let Ok(ngap_message) = ngap::NGAP_PDU::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(&in_iter) else {
+    let Ok(ngap_message) = ngap::NGAP_PDU::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(in_iter) else {
         return NGAP_ERR_ARBITRARY_FAIL
     };
 
