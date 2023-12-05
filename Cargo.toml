@@ -13,7 +13,8 @@ crate-type = ["rlib", "staticlib"]
 [dependencies]
 asn1-codecs = { version = "0.5", path = "../hampi/codecs" }
 asn1_codecs_derive = { version = "0.5", path = "../hampi/codecs_derive" }
-entropic = { version = "0.1", path = "../entropic/entropic", features = ["derive", "bitvec"] }
+entropic = { version = "0.1", path = "../entropic/entropic", features = ["bitvec", "derive"] }
+entropic-derive = { version = "0.1", path = "../entropic/entropic_derive" }
 log = { version = "0.4" }
 libc = { version = "0.2" }
 bitvec = { version = "1.0" }

@@ -27,6 +27,10 @@ const long UNSUCCESSFUL_OUTCOME = 3 << 8;
 // a negative error code on failure.
 long ngap_arbitrary_to_structured(char *buf_in, long in_len, char *buf_out, long out_max);
 
+long ngap_arbitrary_initial_ue(char *buf_in, long in_len, char *buf_out, long out_max);
+
+long ngap_arbitrary_uplink_nas(char *buf_in, long in_len, char *buf_out, long out_max);
+
 // Converts arbitrary unstructured bytes into a structured S1AP message,
 // excluding the given PDU message types.
 // Returns a the length of the structured bytes written to `buf_out`, or

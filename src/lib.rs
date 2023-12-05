@@ -2,6 +2,8 @@
 
 mod ngap;
 
+use std::slice;
+
 use asn1_codecs::aper::AperCodec;
 use std::os::raw::c_char;
 use entropic::prelude::*;
@@ -29,14 +31,108 @@ pub unsafe extern "C" fn ngap_arbitrary_to_structured(buf_in: *mut c_char, in_le
         Err(_) => return NGAP_ERR_INVALID_ARG,
     };
 
-    let in_slice = std::slice::from_raw_parts(buf_in as *const u8, in_len);
-    let out_slice = std::slice::from_raw_parts_mut(buf_out as *mut u8, out_max);
+    let in_slice = slice::from_raw_parts(buf_in as *const u8, in_len);
+    let out_slice = slice::from_raw_parts_mut(buf_out as *mut u8, out_max);
 
     let in_iter = in_slice.iter().chain(std::iter::repeat(&0u8).take(200_000 - in_slice.len())); // Cap total entropy to 200,000 bytes for performance
 
-    let Ok(ngap_message) = ngap::NGAP_PDU::from_finite_entropy(&mut FiniteEntropySource::from_iter(in_iter)) else {
+    let Ok(ngap_message) = ngap::NGAP_PDU::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(&in_iter) else {
         return NGAP_ERR_ARBITRARY_FAIL
     };
+
+    let mut encoded = asn1_codecs::PerCodecData::new_aper();
+    match ngap_message.aper_encode(&mut encoded) {
+        Ok(()) => (),
+        _ => return NGAP_ERR_APER_ENCODING // If the encoding isn't successful, short-circuit this test
+    }
+
+    let aper_message_bytes = encoded.into_bytes();
+    let aper_message_slice = aper_message_bytes.as_slice();
+    if aper_message_slice.len() > out_max {
+        return NGAP_ERR_OUTPUT_TRUNC
+    }
+
+    out_slice[..aper_message_slice.len()].copy_from_slice(aper_message_slice);
+
+    match aper_message_slice.len().try_into() {
+        Ok(l) => l,
+        Err(_) => NGAP_ERR_OUTPUT_TRUNC
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn ngap_arbitrary_uplink_nas(buf_in: *mut c_char, in_len: isize, buf_out: *mut c_char, out_max: isize) -> isize {
+    let in_len: usize = match in_len.try_into() {
+        Ok(l) => l,
+        Err(_) => return NGAP_ERR_INVALID_ARG,
+    };
+
+    let out_max: usize = match out_max.try_into() {
+        Ok(l) => l,
+        Err(_) => return NGAP_ERR_INVALID_ARG,
+    };
+
+    let in_slice = slice::from_raw_parts(buf_in as *const u8, in_len);
+    let out_slice = slice::from_raw_parts_mut(buf_out as *mut u8, out_max);
+
+    let in_iter = in_slice.iter().chain(std::iter::repeat(&0u8).take(200_000 - in_slice.len())); // Cap total entropy to 200,000 bytes for performance
+
+    let Ok(uplink_nas_transport) = ngap::UplinkNASTransport::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(&in_iter) else {
+        return NGAP_ERR_ARBITRARY_FAIL
+    };
+
+    let ngap_message = ngap::NGAP_PDU::InitiatingMessage(ngap::InitiatingMessage {
+        procedure_code: ngap::ProcedureCode(46),
+        criticality: ngap::Criticality(ngap::Criticality::REJECT),
+        value: ngap::InitiatingMessageValue::Id_UplinkNASTransport(uplink_nas_transport),
+    });
+
+    let mut encoded = asn1_codecs::PerCodecData::new_aper();
+    match ngap_message.aper_encode(&mut encoded) {
+        Ok(()) => (),
+        _ => return NGAP_ERR_APER_ENCODING // If the encoding isn't successful, short-circuit this test
+    }
+
+    let aper_message_bytes = encoded.into_bytes();
+    let aper_message_slice = aper_message_bytes.as_slice();
+    if aper_message_slice.len() > out_max {
+        return NGAP_ERR_OUTPUT_TRUNC
+    }
+
+    out_slice[..aper_message_slice.len()].copy_from_slice(aper_message_slice);
+
+    match aper_message_slice.len().try_into() {
+        Ok(l) => l,
+        Err(_) => NGAP_ERR_OUTPUT_TRUNC
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn ngap_arbitrary_initial_ue(buf_in: *mut c_char, in_len: isize, buf_out: *mut c_char, out_max: isize) -> isize {
+    let in_len: usize = match in_len.try_into() {
+        Ok(l) => l,
+        Err(_) => return NGAP_ERR_INVALID_ARG,
+    };
+
+    let out_max: usize = match out_max.try_into() {
+        Ok(l) => l,
+        Err(_) => return NGAP_ERR_INVALID_ARG,
+    };
+
+    let in_slice = slice::from_raw_parts(buf_in as *const u8, in_len);
+    let out_slice = slice::from_raw_parts_mut(buf_out as *mut u8, out_max);
+
+    let in_iter = in_slice.iter().chain(std::iter::repeat(&0u8).take(200_000 - in_slice.len())); // Cap total entropy to 200,000 bytes for performance
+
+    let Ok(initial_ue_message) = ngap::InitialUEMessage::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(&in_iter) else {
+        return NGAP_ERR_ARBITRARY_FAIL
+    };
+
+    let ngap_message = ngap::NGAP_PDU::InitiatingMessage(ngap::InitiatingMessage {
+        procedure_code: ngap::ProcedureCode(15),
+        criticality: ngap::Criticality(ngap::Criticality::REJECT),
+        value: ngap::InitiatingMessageValue::Id_InitialUEMessage(initial_ue_message),
+    });
 
     let mut encoded = asn1_codecs::PerCodecData::new_aper();
     match ngap_message.aper_encode(&mut encoded) {
@@ -79,7 +175,11 @@ pub unsafe extern "C" fn ngap_arbitrary_to_structured_exclude(buf_in: *mut c_cha
     let pdus_slice = std::slice::from_raw_parts(pdus as *const usize, pdus_len);
     let out_slice = std::slice::from_raw_parts_mut(buf_out as *mut u8, out_max);
 
-    let ngap_message = ngap::NGAP_PDU::from_entropy(&mut EntropySource::from_slice(in_slice));
+    let in_iter = in_slice.iter().chain(std::iter::repeat(&0u8).take(200_000 - in_slice.len())); // Cap total entropy to 200,000 bytes for performance
+
+    let Ok(ngap_message) = ngap::NGAP_PDU::from_entropy::<_, entropic::scheme::DefaultEntropyScheme>(&in_iter) else {
+        return NGAP_ERR_ARBITRARY_FAIL
+    };
 
     let pdu_id = match &ngap_message {
         ngap::NGAP_PDU::InitiatingMessage(init_msg) => INITIATING_MESSAGE_EXCL_ID + init_msg.procedure_code.0 as usize,
